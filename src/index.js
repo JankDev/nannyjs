@@ -1,6 +1,3 @@
-import {_} from 'lodash'
-
-
 class UserEntity {
     constructor(id, username, parentId) {
         this.id = id;

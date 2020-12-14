@@ -12,8 +12,9 @@
   "author": "Kacper Duda <kacperduda10@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.1",
-    "lodash": "^4.17.20"
+    "pg": "^8.5.1",
+    "pg-hstore": "^2.3.3",
+    "sequelize": "^6.3.5"
   },
   "devDependencies": {
     "@babel/cli": "^7.12.10",

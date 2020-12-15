@@ -1,8 +1,14 @@
 import Model, {DataTypes, Sequelize} from "sequelize";
 
 class Role {
-    constructor(name) {
+    /**
+     *
+     * @param name
+     * @param children
+     */
+    constructor(name,children) {
         this.name = name
+        this.children = children
     }
 }
 
@@ -79,7 +85,7 @@ class SecurityContext {
 
     /**
      *
-     * @param user
+     * @param user: User
      */
     setUser(user) {
         this.user = user
@@ -130,6 +136,11 @@ initConnection().then(_ => {
 
     class SequelizeUserService extends UserService {
 
+        /**
+         *
+         * @param username
+         * @returns {User}
+         */
         findUserByUsername(username) {
             let user = undefined
             Employee.findAll({
@@ -153,7 +164,19 @@ initConnection().then(_ => {
         findAll() {
             return Employee.findAll()
         }
+
+        findOne(){
+
+        }
+
     }
 
-    console.log(SecurityConfiguration.securityContext)
+    const userService = new SequelizeUserService()
+
+    const user = userService.findUserByUsername("user")
+
+    securityContext.setUser(user)
+
+    const repo = new EmployeeRepo()
+    repo.findAll()
 })

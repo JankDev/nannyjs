@@ -1,156 +1,182 @@
-import {_} from 'lodash'
+import Model, {DataTypes, Sequelize} from "sequelize";
 
-
-class UserEntity {
-    constructor(id, username, parentId) {
-        this.id = id;
-        this.username = username;
-        this.parentId = parentId;
-    }
-}
-
-class ACLEntity {
-    constructor(userId, table, entityId) {
-        this.userId = userId;
-        this.table = table;
-        this.entityId = entityId;
-    }
-}
-
-class SalaryEntity {
-    constructor(id, name, value) {
-        this.id = id;
-        this.name = name;
-        this.value = value;
+class Role {
+    /**
+     *
+     * @param name
+     * @param children
+     */
+    constructor(name,children) {
+        this.name = name
+        this.children = children
     }
 }
 
 class User {
-    constructor(id, username, parentId) {
-        this.id = id;
+    constructor(username, roles) {
         this.username = username;
-        this.parentId = parentId;
-        this.children = []
+        this.roles = roles
     }
 }
-
-const mockedDb = new Map()
-mockedDb.set("Users", [
-    new UserEntity(1, "dupa", null),
-    new UserEntity(2, "admin1", 1),
-    new UserEntity(3, "user1", 1),
-    new UserEntity(4, "admin1.1", 2),
-    new UserEntity(5, "user1.1", 3),
-    new UserEntity(6, "user1.2", 3),
-]);
-mockedDb.set("Salaries", [
-    new SalaryEntity(1, "chairman", 50000),
-    new SalaryEntity(2, "PM", 8000),
-    new SalaryEntity(3, "dev", 15000),
-    new SalaryEntity(4, "tester1", 8000),
-    new SalaryEntity(5, "tester2", 7000),
-]);
-mockedDb.set("ACL", [
-    // dupa access
-    new ACLEntity(1, "Salaries", 1),
-    new ACLEntity(1, "Salaries", 2),
-    new ACLEntity(1, "Salaries", 3),
-    new ACLEntity(1, "Salaries", 4),
-    new ACLEntity(1, "Salaries", 5),
-    // admin1 access
-    new ACLEntity(2, "Salaries", 2),
-    new ACLEntity(2, "Salaries", 3),
-    new ACLEntity(2, "Salaries", 4),
-    new ACLEntity(2, "Salaries", 5),
-    // admin1.1 access
-    new ACLEntity(4, "Salaries", 3),
-    new ACLEntity(4, "Salaries", 4),
-    new ACLEntity(4, "Salaries", 5),
-    // user1 access
-    new ACLEntity(3, "Salaries", 4),
-    new ACLEntity(3, "Salaries", 5),
-]);
-
 
 class UserService {
-
-    constructor(users) {
-        this.users = UserHelper.createUsersTree(users)
-    }
-
-    setCurrentUser(val) {
-        this.currentUser = UserHelper.findUserByUsername(this.users, val)
-        if (!this.currentUser) {
-            throw new Error("User doesn't exist")
-        }
-        this.roles = UserHelper.getFlattenChildren(this.currentUser, [this.currentUser]).map(x => x.username)
+    /**
+     * Returns a User object that is used for setting the security context
+     * @param username
+     */
+    findUserByUsername(username) {
+        throw new Error("Not implemented")
     }
 }
 
-
-class UserHelper {
-
-    static createUsersTree(users) {
-        users.forEach(user => {
-            const parent = users.find(x => x.id === user.parentId);
-            if (parent) {
-                parent.children ? parent.children.push(user) : parent.children = [user];
-            }
-        });
-        return users.filter(x => !x.parentId).pop()
-    }
-
-    static getFlattenChildren(user, acc) {
-        if (!user.children) {
-            return []
-        }
-        user.children.forEach(x => {
-            acc.push(x);
-            UserHelper.getFlattenChildren(x, acc)
-        })
-        return acc
-    }
-
-    static findUserByUsername(userNode, username) {
-        if (userNode.username === username) {
-            return userNode
-        } else if (userNode.children != null) {
-            var i;
-            var result = null;
-            for(i = 0; result == null && i < userNode.children.length; i++){
-                 result = UserHelper.findUserByUsername(userNode.children[i], username);
-            }
-            return result
-        } 
-        return null
-    }
-}
-
-
-class DBConnection {
-    constructor(db, userService) {
-        this.db = db
+class SecurityConfiguration {
+    constructor(securityContext, userService) {
+        this.securityContext = securityContext
         this.userService = userService
     }
-
-    @withRole("admin1")
-    getSalaries() {
-        return this.db.get("Salaries")
-    }
-
 }
 
+class SecurityConfigurationBuilder {
+    get securityContext() {
+        return this._securityContext;
+    }
 
-function withRole(role) {
+    setSecurityContext(value) {
+        this._securityContext = value;
+        return this
+    }
+
+    get userService() {
+        return this._userService;
+    }
+
+    setUserService(value) {
+        this._userService = value;
+        return this
+    }
+
+    constructor() {
+        this._securityContext = undefined
+        this._userService = undefined
+    }
+
+    build() {
+        return SecurityConfiguration(this._securityContext, this._userService)
+    }
+}
+
+class AuthorizationError extends Error {
+    constructor(message) {
+        super(message);
+    }
+}
+
+/**
+ * Holds the current authenticated user
+ */
+class SecurityContext {
+    constructor() {
+        if (SecurityContext._instance) {
+            throw new Error("Singleton class already instantiated")
+        }
+        this.user = null
+        SecurityContext._instance = this
+    }
+
+    /**
+     *
+     * @param user: User
+     */
+    setUser(user) {
+        this.user = user
+    }
+
+    clear() {
+        this.user = null
+    }
+
+    getUser() {
+        return this.user
+    }
+}
+
+const securityContext = new SecurityContext()
+
+function RoleAllowed(role) {
     return (target, name, descriptor) => {
-        // implement me
+        const user = securityContext.getUser()
+        if (!user.roles.includes(role)) throw new AuthorizationError("Not authorized!")
         return descriptor
     }
 }
 
-const userService = new UserService(mockedDb.get("Users"));
-const db = new DBConnection(mockedDb, userService)
+const sequelize = new Sequelize("postgres://user:password@localhost:5432/db")
 
+async function initConnection() {
+    try {
+        await sequelize.authenticate();
+        console.log('Connection has been established successfully.');
+    } catch (error) {
+        console.error('Unable to connect to the database:', error);
+    }
+}
 
-let salaries = db.getSalaries()
-console.log(salaries)
+initConnection().then(_ => {
+    class Employee extends Model {
+
+    }
+
+    Employee.init({
+        name: {
+            type: DataTypes.STRING,
+            allowNull: true
+        }
+    })
+    Employee.sync()
+
+    class SequelizeUserService extends UserService {
+
+        /**
+         *
+         * @param username
+         * @returns {User}
+         */
+        findUserByUsername(username) {
+            let user = undefined
+            Employee.findAll({
+                where: {
+                    name: username
+                }
+            }).then(emp => user = new User(emp.name, [])
+            )
+
+            return user
+        }
+    }
+
+    const securityConfig = new SecurityConfigurationBuilder()
+        .setUserService(new SequelizeUserService())
+        .setSecurityContext(securityContext)
+        .build()
+
+    class EmployeeRepo {
+        @RoleAllowed("ROLE_ADMIN")
+        findAll() {
+            return Employee.findAll()
+        }
+
+        findOne(){
+
+        }
+
+    }
+
+    const userService = new SequelizeUserService()
+
+    const user = userService.findUserByUsername("user")
+
+    securityContext.setUser(user)
+
+    const repo = new EmployeeRepo()
+    repo.findAll()
+})

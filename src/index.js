@@ -1,11 +1,20 @@
 import Model, {DataTypes, Sequelize} from "sequelize";
 import "reflect-metadata";
-import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, EventSubscriber, EntitySubscriberInterface, createConnection, getConnection } from 'typeorm';
+import {
+    Entity,
+    Column,
+    PrimaryColumn,
+    PrimaryGeneratedColumn,
+    EventSubscriber,
+    EntitySubscriberInterface,
+    createConnection,
+    getConnection, getRepository
+} from 'typeorm';
 
 
 // class UserService {
 //     /**
-//      * Returns a User object that is used for setting the security context
+//      * Returns a Salary object that is used for setting the security context
 //      * @param username
 //      */
 //     findUserByUsername(username) {
@@ -69,7 +78,7 @@ import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, EventSubscriber,
 
 //     /**
 //      *
-//      * @param user: User
+//      * @param user: Salary
 //      */
 //     setUser(user) {
 //         this.user = user
@@ -93,7 +102,6 @@ import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, EventSubscriber,
 //         return descriptor
 //     }
 // }
-
 
 
 // const sequelize = new Sequelize("postgres://user:password@localhost:5432/db")
@@ -125,7 +133,7 @@ import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, EventSubscriber,
 //         /**
 //          *
 //          * @param username
-//          * @returns {User}
+//          * @returns {Salary}
 //          */
 //         findUserByUsername(username) {
 //             let user = undefined
@@ -133,7 +141,7 @@ import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, EventSubscriber,
 //                 where: {
 //                     name: username
 //                 }
-//             }).then(emp => user = new User(emp.name, [])
+//             }).then(emp => user = new Salary(emp.name, [])
 //             )
 
 //             return user
@@ -174,88 +182,28 @@ function Secured() {
     }
 }
 
-
-@Entity()
-class User {
-    @PrimaryGeneratedColumn('uuid')
-    id;
-    @Column('text',{nullable: true})
-    username;
-    constructor(username){
-        this.username = username
+const knex = require('knex')({
+    client: 'postgres',
+    connection: {
+        host: '127.0.0.1',
+        user: 'user',
+        password: 'password',
+        database: 'db',
+        charset: 'utf8'
     }
-}
-
-@Entity()
-class Salary {
-    @PrimaryGeneratedColumn('uuid')
-    id;
-    @Column('text', {nullable: true})
-    name;
-    @Column('int')
-    salary;
-
-    constructor(name, salary) {
-        this.name = name;
-        this.salary = salary;
-    }
-}
-
-@EventSubscriber()
-class EntitySubscriber {
-
-    afterTransactionStart(event) {
-        console.log('******************************')  
-        console.log('after transation start')
-             
-    }
-
-    beforeTransactionCommit(event) {
-        console.log('******************************')  
-        console.log('before transation commit')
-
-        if (event.queryRunner.databaseConnection.activeQuery){
-            const query = event.queryRunner.databaseConnection.activeQuery.text;
-            q = query
-            console.log(query)
-        }     
-    }
-}
-
-let q;
-
-const connection = createConnection({
-    type: "postgres",
-    host: "localhost",
-    port: 5432,
-    username: "kacper",
-    password: "",
-    database: "typeormtest",
-    synchronize: true,
-    entities: [User, Salary],
-    subscribers: [EntitySubscriber],
-    logging: true
-}).then(connection => {
-    const salary = new Salary('dev', 15000);
-    
-
-    // connection.manager.find(User)
-    //     .then(console.log)
-    //     .catch(console.log);
-        
-
-    // connection.transaction(async trans => {
-    //     trans.find(Salary)
-    //         .then(console.log)
-    // })
-
-
-    connection.transaction(transactionalEntityManager => {
-        transactionalEntityManager.find(User)
-            .then(x => {
-                console.log('>>>>>>', x)
-                console.log('query: ', q)
-            })
-    })
-
 })
+const bookshelf = require('bookshelf')(knex)
+
+// Defining models
+const Salary = bookshelf.model('Salary', {
+    tableName: 'salary',
+
+    initialize() {
+        this.on('fetching:collection', (mode, columns, options) => {
+            options.query.where('salary', 15000)
+        })
+    }
+})
+
+Salary.fetchAll().then(salaries => console.log(salaries.toJSON()))
+

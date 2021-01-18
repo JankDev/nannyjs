@@ -16,9 +16,7 @@
     "knex": "^0.21.15",
     "pg": "^8.5.1",
     "pg-hstore": "^2.3.3",
-    "reflect-metadata": "^0.1.13",
-    "sequelize": "^6.3.5",
-    "typeorm": "^0.2.30"
+    "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
     "@babel/cli": "^7.12.10",

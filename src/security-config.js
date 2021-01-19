@@ -5,7 +5,7 @@ class SecurityConfiguration {
     }
 }
 
-class SecurityConfigurationBuilder {
+export class SecurityConfigurationBuilder {
     setSecurityContext(value) {
         this._securityContext = value;
         return this
@@ -22,7 +22,7 @@ class SecurityConfigurationBuilder {
     }
 
     build() {
-        return SecurityConfiguration(this._securityContext, this._aclTableName)
+        return new SecurityConfiguration(this._securityContext, this._aclTableName)
     }
 }
 
@@ -30,7 +30,7 @@ class SecurityConfigurationBuilder {
 /**
  * Holds the current authenticated user
  */
-class SecurityContext {
+export class SecurityContext {
     constructor() {
         if (SecurityContext._instance) {
             throw new Error("Singleton class already instantiated")

@@ -1,5 +1,6 @@
 export class Role {
-    constructor(name, parent) {
+    constructor(id, name, parent) {
+        this.id = id;
         this.name = name;
         this.parent = parent;
         this.children = []
@@ -11,7 +12,7 @@ export class RoleHelper {
 
     static createRolesTree(roles) {
         roles.forEach(role => {
-            const parent = roles.find(x => x.name === role.parent);
+            const parent = roles.find(x => x.id === role.parent.id);
             if (parent) {
                 parent.children ? parent.children.push(role) : parent.children = [role];
             }
@@ -30,14 +31,14 @@ export class RoleHelper {
         return acc
     }
 
-    static findRoleByName(roleNode, name) {
-        if (roleNode.name === name) {
+    static findRoleById(roleNode, id) {
+        if (roleNode.id === id) {
             return roleNode
         } else if (roleNode.children != null) {
-            var i;
-            var result = null;
+            let i;
+            let result = null;
             for(i = 0; result == null && i < roleNode.children.length; i++){
-                 result = RoleHelper.findRoleByName(roleNode.children[i], name);
+                 result = RoleHelper.findRoleById(roleNode.children[i], id);
             }
             return result
         } 

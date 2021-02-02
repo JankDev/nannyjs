@@ -1,5 +1,4 @@
-import { bookshelf } from './config';
-import _ from 'lodash';
+import {bookshelf} from './config';
 
 function model(enityName, securityConfig) {
     return bookshelf.model(enityName, {

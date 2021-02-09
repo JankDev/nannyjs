@@ -12,7 +12,7 @@ export class RoleHelper {
 
     static createRolesTree(roles) {
         roles.forEach(role => {
-            const parent = roles.find(x => x.id === role.parent.id);
+            const parent = roles.find(x => x.id === role.parent);
             if (parent) {
                 parent.children ? parent.children.push(role) : parent.children = [role];
             }
@@ -20,13 +20,13 @@ export class RoleHelper {
         return roles.filter(x => !x.parent).pop()
     }
 
-    static getFlattenChildren(role, acc) {
+    static getFlattenChildrenIds(role, acc) {
         if (!role.children) {
             return []
         }
         role.children.forEach(x => {
-            acc.push(x);
-            RoleHelper.getFlattenChildren(x, acc)
+            acc.push(x.id);
+            RoleHelper.getFlattenChildrenIds(x, acc)
         })
         return acc
     }
@@ -45,3 +45,13 @@ export class RoleHelper {
         return null
     }
 }
+
+// example roles structure in app
+export const roles = [
+    new Role(1, 'root', null),
+    new Role(2, 'admin 1', 1),
+    new Role(3, 'admin 2', 1),
+    new Role(4, 'user 1', 2),
+    new Role(5, 'user 2', 2),
+    new Role(6, 'user 3', 3)
+]
